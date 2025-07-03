@@ -8,10 +8,25 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  // Dummy data — replace with Supabase values later
   final int totalEntries = 12;
   final int streakCount = 4;
   final int photoCount = 8;
+
+  void _handleMenuAction(String value) {
+    switch (value) {
+      case 'settings':
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Settings coming soon!')),
+        );
+        break;
+      case 'logout':
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Logging out...')),
+        );
+        // Add logout logic later
+        break;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,6 +35,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
         title: const Text('Profile'),
         centerTitle: true,
         backgroundColor: const Color(0xFF2C2C3A),
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.menu),
+            onSelected: _handleMenuAction,
+            itemBuilder: (BuildContext context) => [
+              const PopupMenuItem(
+                value: 'settings',
+                child: Row(
+                  children: [
+                    Icon(Icons.settings, color: Colors.pinkAccent),
+                    SizedBox(width: 8),
+                    Text('Settings'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'logout',
+                child: Row(
+                  children: [
+                    Icon(Icons.logout, color: Colors.pinkAccent),
+                    SizedBox(width: 8),
+                    Text('Logout'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
@@ -27,7 +70,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             const CircleAvatar(
               radius: 50,
-              backgroundImage: AssetImage('assets/profile.png'), // Replace with user image
+              backgroundImage: AssetImage('assets/profile.png'),
             ),
             const SizedBox(height: 12),
             Text(
@@ -36,7 +79,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: 32),
 
-            // My Records
             const Align(
               alignment: Alignment.centerLeft,
               child: Text(
@@ -52,20 +94,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   label: 'Streak',
                   count: streakCount,
                   icon: Icons.bolt_rounded,
-                  onTap: () {},
+                  onTap: () {
+                    _navigateWithFade(context, const DummyScreen(title: 'Streak Details'));
+                  },
                 ),
                 _RecordCard(
                   label: 'Photos',
                   count: photoCount,
                   icon: Icons.photo_library,
-                  onTap: () {},
+                  onTap: () {
+                    _navigateWithFade(context, const DummyScreen(title: 'Photo Records'));
+                  },
                 ),
               ],
             ),
 
             const SizedBox(height: 32),
-
-            // App Info
             const Align(
               alignment: Alignment.centerLeft,
               child: Text(
@@ -102,6 +146,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _navigateWithFade(BuildContext context, Widget screen) {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) => screen,
+        transitionsBuilder: (_, animation, __, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
       ),
     );
   }
@@ -147,6 +202,25 @@ class _RecordCard extends StatelessWidget {
               style: const TextStyle(fontSize: 20, color: Colors.white, fontWeight: FontWeight.bold),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// Dummy screen used for animation demonstration
+class DummyScreen extends StatelessWidget {
+  final String title;
+  const DummyScreen({super.key, required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(title)),
+      body: Center(
+        child: Text(
+          '$title content goes here',
+          style: const TextStyle(fontSize: 18),
         ),
       ),
     );
