@@ -1,37 +1,37 @@
 import 'package:flutter/material.dart';
-import 'package:deardiary2/main_navigation.dart'; 
-import 'signup_screen.dart';
+import 'login_screen.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class SignUpScreen extends StatefulWidget {
+  const SignUpScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<SignUpScreen> createState() => _SignUpScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _SignUpScreenState extends State<SignUpScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
-  void _login() {
+  void _signUp() {
     String email = _emailController.text.trim();
     String password = _passwordController.text.trim();
 
-    // 🧪 MOCK: Replace with your own dummy login credentials
-    if (email == "nrshanarahim@gmail.com" && password == "meowmeow") {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const MainNavigation()),
-      );
-    } else {
+    if (email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Invalid email or password'),
-          backgroundColor: Colors.redAccent,
-        ),
+        const SnackBar(content: Text('Please enter all fields')),
       );
+      return;
     }
+
+    // Mock registration logic
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Account created! You can now log in.')),
+    );
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+    );
   }
 
   @override
@@ -45,21 +45,19 @@ class _LoginScreenState extends State<LoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Welcome Back 💖',
-                style: TextStyle(fontSize: 28, color: Colors.white),
+                'Create an Account 📝',
+                style: TextStyle(fontSize: 26, color: Colors.white),
               ),
               const SizedBox(height: 8),
               const Text(
-                'Login to continue writing your story.',
+                'Let’s get you started on your journaling journey!',
                 style: TextStyle(fontSize: 16, color: Colors.white70),
               ),
               const SizedBox(height: 32),
 
-              // Email Field
               TextField(
                 controller: _emailController,
                 style: const TextStyle(color: Colors.white),
-                keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
                   labelText: 'Email',
                   labelStyle: const TextStyle(color: Colors.white70),
@@ -72,7 +70,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 20),
 
-              // Password Field
               TextField(
                 controller: _passwordController,
                 obscureText: _obscurePassword,
@@ -80,8 +77,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 decoration: InputDecoration(
                   labelText: 'Password',
                   labelStyle: const TextStyle(color: Colors.white70),
-                  filled: true,
-                  fillColor: Colors.grey[800],
                   suffixIcon: IconButton(
                     icon: Icon(
                       _obscurePassword
@@ -93,6 +88,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       setState(() => _obscurePassword = !_obscurePassword);
                     },
                   ),
+                  filled: true,
+                  fillColor: Colors.grey[800],
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -100,12 +97,11 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 30),
 
-              // Login Button
               SizedBox(
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: _login,
+                  onPressed: _signUp,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.pinkAccent,
                     shape: RoundedRectangleBorder(
@@ -113,36 +109,32 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   child: const Text(
-                    'Login',
+                    'Sign Up',
                     style: TextStyle(fontSize: 16),
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
 
-              // Sign up option
+              const SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text(
-                    'New here?',
-                    style: TextStyle(color: Colors.white60),
-                  ),
+                  const Text('Already have an account?',
+                      style: TextStyle(color: Colors.white60)),
                   TextButton(
                     onPressed: () {
-                      Navigator.push(
+                      Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(
-                            builder: (_) => const SignUpScreen()),
+                        MaterialPageRoute(builder: (_) => const LoginScreen()),
                       );
                     },
                     child: const Text(
-                      'Sign up',
+                      'Login',
                       style: TextStyle(color: Colors.pinkAccent),
                     ),
                   )
                 ],
-              ),
+              )
             ],
           ),
         ),
