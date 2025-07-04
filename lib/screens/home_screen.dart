@@ -8,7 +8,8 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
   final List<String> hashtags = [
     '#grateful',
     '#school',
@@ -18,23 +19,20 @@ class _HomeScreenState extends State<HomeScreen> {
     '#travel',
   ];
 
-  double _moodValue = 0.5;
+  final List<Map<String, String>> moods = [
+    {'emoji': '😄', 'label': 'Happy'},
+    {'emoji': '😐', 'label': 'Neutral'},
+    {'emoji': '😢', 'label': 'Sad'},
+    {'emoji': '😡', 'label': 'Angry'},
+    {'emoji': '😨', 'label': 'Anxious'},
+    {'emoji': '😴', 'label': 'Tired'},
+    {'emoji': '🤩', 'label': 'Excited'},
+  ];
+
   String? selectedTag;
+  String? selectedMood;
 
-  String getMoodLabel(double value) {
-    if (value < 0.25) return 'Sad';
-    if (value < 0.6) return 'Neutral';
-    return 'Happy';
-  }
-
-  String getEmoji(double value) {
-    if (value < 0.25) return '😔';
-    if (value < 0.6) return '😐';
-    return '😊';
-  }
-
-  void _navigateToWritePage() {
-    final mood = getMoodLabel(_moodValue);
+  void _navigateToWritePage(String mood) {
     Navigator.push(
       context,
       PageRouteBuilder(
@@ -48,20 +46,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final moodEmoji = getEmoji(_moodValue);
-    final moodLabel = getMoodLabel(_moodValue);
-
     return Scaffold(
       backgroundColor: const Color(0xFF1E1E2C),
       appBar: AppBar(
         title: const Text('DearDiary'),
         backgroundColor: const Color(0xFF2C2C3A),
         centerTitle: true,
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.pinkAccent,
-        onPressed: _navigateToWritePage,
-        child: const Icon(Icons.add),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -81,43 +71,74 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 24),
 
-              // 😄 Mood Slider + Emoji
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.grey[850],
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      moodEmoji,
-                      style: const TextStyle(fontSize: 60),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      moodLabel,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Colors.white70,
-                      ),
-                    ),
-                    Slider(
-                      value: _moodValue,
-                      onChanged: (value) {
-                        setState(() => _moodValue = value);
+              // 🎭 Mood Selector
+              SizedBox(
+                height: 120,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: moods.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 12),
+                  itemBuilder: (context, index) {
+                    final mood = moods[index];
+                    final isSelected = selectedMood == mood['label'];
+
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          selectedMood = mood['label'];
+                        });
+                        Future.delayed(const Duration(milliseconds: 150), () {
+                          _navigateToWritePage(selectedMood!);
+                        });
                       },
-                      min: 0.0,
-                      max: 1.0,
-                      divisions: 4,
-                      activeColor: Colors.pinkAccent,
-                      inactiveColor: Colors.grey,
-                    ),
-                  ],
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeOut,
+                        width: isSelected ? 100 : 90,
+                        height: isSelected ? 100 : 90,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          gradient: LinearGradient(
+                            colors: isSelected
+                                ? [Colors.pinkAccent, Colors.purpleAccent]
+                                : [Colors.grey.shade800, Colors.grey.shade700],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          boxShadow: isSelected
+                              ? [
+                                  BoxShadow(
+                                    color: Colors.pinkAccent.withOpacity(0.4),
+                                    blurRadius: 12,
+                                    spreadRadius: 1,
+                                    offset: const Offset(0, 4),
+                                  )
+                                ]
+                              : [],
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              mood['emoji']!,
+                              style: const TextStyle(fontSize: 32),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              mood['label']!,
+                              style: const TextStyle(
+                                  color: Colors.white70, fontSize: 14),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
 
               // 🏷 Hashtag Filter
               Align(
@@ -146,7 +167,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         decoration: BoxDecoration(
-                          color: isSelected ? Colors.pinkAccent : Colors.grey[700],
+                          color: isSelected
+                              ? Colors.pinkAccent
+                              : Colors.grey[700],
                           borderRadius: BorderRadius.circular(20),
                         ),
                         alignment: Alignment.center,

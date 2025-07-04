@@ -12,42 +12,25 @@ class WritePage extends StatefulWidget {
 }
 
 class _WritePageState extends State<WritePage> {
-  final TextEditingController _titleController = TextEditingController();
-  final TextEditingController _entryController = TextEditingController();
-  File? _selectedImage;
+  final TextEditingController _controller = TextEditingController();
+  File? _image;
 
-  Future<void> _pickImage(ImageSource source) async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: source);
-    if (pickedFile != null) {
-      setState(() => _selectedImage = File(pickedFile.path));
+  Future<void> _pickImage() async {
+    final picked =
+        await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (picked != null) {
+      setState(() {
+        _image = File(picked.path);
+      });
     }
   }
 
   void _saveEntry() {
-    String title = _titleController.text;
-    String entry = _entryController.text;
-
-    if (entry.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please write something.')),
-      );
-      return;
-    }
-
-    // Save to database later
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Entry saved!')),
-    );
-
-    // Optional: Clear fields
-    setState(() {
-      _titleController.clear();
-      _entryController.clear();
-      _selectedImage = null;
-    });
-
+    // You can replace this with Supabase or local storage logic later
     Navigator.pop(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Entry saved!")),
+    );
   }
 
   @override
@@ -55,92 +38,61 @@ class _WritePageState extends State<WritePage> {
     return Scaffold(
       backgroundColor: const Color(0xFF1E1E2C),
       appBar: AppBar(
-        title: const Text('Write Entry'),
+        title: const Text("New Entry"),
         backgroundColor: const Color(0xFF2C2C3A),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.save),
+            onPressed: _saveEntry,
+          )
+        ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 🧠 Mood Info
-            Text(
-              'Mood: ${widget.mood}',
-              style: const TextStyle(color: Colors.white70, fontSize: 16),
-            ),
-            const SizedBox(height: 12),
-
-            // ✍️ Title
+            Text("Mood: ${widget.mood}",
+                style: const TextStyle(color: Colors.white70, fontSize: 16)),
+            const SizedBox(height: 16),
             TextField(
-              controller: _titleController,
+              controller: _controller,
+              maxLines: 6,
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
-                labelText: 'Title',
-                labelStyle: const TextStyle(color: Colors.white54),
+                hintText: "Write about your day...",
+                hintStyle: const TextStyle(color: Colors.white54),
                 filled: true,
                 fillColor: Colors.grey[800],
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
             const SizedBox(height: 16),
-
-            // 📓 Entry Field
-            TextField(
-              controller: _entryController,
-              maxLines: 10,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                labelText: 'Write your thoughts...',
-                labelStyle: const TextStyle(color: Colors.white54),
-                filled: true,
-                fillColor: Colors.grey[800],
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // 📷 Image Buttons
             Row(
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.pinkAccent),
-                  onPressed: () => _pickImage(ImageSource.camera),
-                  icon: const Icon(Icons.camera_alt),
-                  label: const Text('Camera'),
-                ),
-                const SizedBox(width: 12),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.pinkAccent),
-                  onPressed: () => _pickImage(ImageSource.gallery),
+                  onPressed: _pickImage,
                   icon: const Icon(Icons.image),
-                  label: const Text('Gallery'),
+                  label: const Text("Add Image"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.pinkAccent,
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 16),
-
-            // 🖼️ Image Preview
-            if (_selectedImage != null)
+            if (_image != null)
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: Image.file(_selectedImage!, height: 200),
-              ),
-
-            const SizedBox(height: 24),
-
-            // ✅ Save Button
-            Center(
-              child: ElevatedButton.icon(
-                onPressed: _saveEntry,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                child: Image.file(
+                  _image!,
+                  width: double.infinity,
+                  height: 150,
+                  fit: BoxFit.cover,
                 ),
-                icon: const Icon(Icons.check),
-                label: const Text('Save Entry'),
               ),
-            ),
           ],
         ),
       ),
