@@ -63,6 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _navigateToaddEntryScreen(String mood) {
     Navigator.push(
       context,
+      
       PageRouteBuilder(
         transitionDuration: const Duration(milliseconds: 400),
         pageBuilder: (_, __, ___) => AddEntryScreen(mood: mood),

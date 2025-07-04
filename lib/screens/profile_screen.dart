@@ -9,8 +9,8 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final int totalEntries = 12;
-  final int streakCount = 4;
-  final int photoCount = 8;
+  final int streakCount = 2;
+  final int photoCount = 1;
 
   void _handleMenuAction(String value) {
     switch (value) {

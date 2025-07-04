@@ -1,36 +1,61 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'package:deardiary2/services/supabase_services.dart';
+import 'package:deardiary2/models/diary_entry.dart';
 
-class WritePage extends StatefulWidget {
+class AddEntryScreen extends StatefulWidget {
   final String mood;
-
-  const WritePage({super.key, required this.mood});
+  const AddEntryScreen({super.key, required this.mood});
 
   @override
-  State<WritePage> createState() => _WritePageState();
+  State<AddEntryScreen> createState() => _AddEntryScreenState();
 }
 
-class _WritePageState extends State<WritePage> {
-  final TextEditingController _controller = TextEditingController();
-  File? _image;
+class _AddEntryScreenState extends State<AddEntryScreen> {
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _storyController = TextEditingController();
+  final SupabaseService _supabaseService = SupabaseService();
+  final List<String> _availableTags = [
+    '#grateful', '#school', '#friends', '#family', '#goals', '#travel'
+  ];
+  final List<String> _selectedTags = [];
+  final List<File> _selectedImages = [];
 
-  Future<void> _pickImage() async {
-    final picked =
-        await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (picked != null) {
+  Future<void> _pickImage(ImageSource source) async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: source);
+    if (pickedFile != null) {
       setState(() {
-        _image = File(picked.path);
+        _selectedImages.add(File(pickedFile.path));
       });
     }
   }
 
-  void _saveEntry() {
-    // You can replace this with Supabase or local storage logic later
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Entry saved!")),
+  Future<void> _saveEntry() async {
+    final title = _titleController.text.trim();
+    final content = _storyController.text.trim();
+
+    if (title.isEmpty || content.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Title and Story can't be empty")),
+      );
+      return;
+    }
+
+    final entry = DiaryEntry(
+      title: title,
+      content: content,
+      mood: widget.mood.isEmpty ? 'Custom' : widget.mood,
+      tags: _selectedTags,
+      createdAt: DateTime.now(),
+      id: '',
+      userId: _supabaseService.currentUserId!,
+      imageUrls: const [], // Provide an empty list or actual image URLs if available
     );
+
+    await _supabaseService.addEntry(entry);
+    Navigator.pop(context);
   }
 
   @override
@@ -38,61 +63,117 @@ class _WritePageState extends State<WritePage> {
     return Scaffold(
       backgroundColor: const Color(0xFF1E1E2C),
       appBar: AppBar(
-        title: const Text("New Entry"),
+        title: const Text('Write'),
         backgroundColor: const Color(0xFF2C2C3A),
         actions: [
           IconButton(
-            icon: const Icon(Icons.save),
+            icon: const Icon(Icons.check),
             onPressed: _saveEntry,
           )
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Mood: ${widget.mood}",
-                style: const TextStyle(color: Colors.white70, fontSize: 16)),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _controller,
-              maxLines: 6,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: "Write about your day...",
-                hintStyle: const TextStyle(color: Colors.white54),
-                filled: true,
-                fillColor: Colors.grey[800],
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
+            const Text(
+              'Keep your story be heard 💬',
+              style: TextStyle(color: Colors.white70, fontSize: 16),
             ),
             const SizedBox(height: 16),
+
+            // Title + Story in same container
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey[850],
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                children: [
+                  TextField(
+                    controller: _titleController,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(
+                      hintText: 'Title',
+                      hintStyle: TextStyle(color: Colors.white54),
+                      border: InputBorder.none,
+                    ),
+                  ),
+                  const Divider(color: Colors.white24),
+                  TextField(
+                    controller: _storyController,
+                    style: const TextStyle(color: Colors.white),
+                    maxLines: null,
+                    decoration: const InputDecoration(
+                      hintText: 'Story',
+                      hintStyle: TextStyle(color: Colors.white54),
+                      border: InputBorder.none,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            const Text('Mood Tags', style: TextStyle(color: Colors.white70)),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              children: _availableTags.map((tag) {
+                final selected = _selectedTags.contains(tag);
+                return ChoiceChip(
+                  label: Text(tag),
+                  selected: selected,
+                  onSelected: (isSelected) {
+                    setState(() {
+                      if (isSelected) {
+                        _selectedTags.add(tag);
+                      } else {
+                        _selectedTags.remove(tag);
+                      }
+                    });
+                  },
+                  selectedColor: Colors.pinkAccent,
+                  backgroundColor: Colors.grey[700],
+                  labelStyle: const TextStyle(color: Colors.white),
+                );
+              }).toList(),
+            ),
+
+            const SizedBox(height: 24),
+            const Text('Images', style: TextStyle(color: Colors.white70)),
+            const SizedBox(height: 8),
             Row(
               children: [
-                ElevatedButton.icon(
-                  onPressed: _pickImage,
-                  icon: const Icon(Icons.image),
-                  label: const Text("Add Image"),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.pinkAccent,
-                  ),
+                IconButton(
+                  icon: const Icon(Icons.camera_alt, color: Colors.white),
+                  onPressed: () => _pickImage(ImageSource.camera),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.photo, color: Colors.white),
+                  onPressed: () => _pickImage(ImageSource.gallery),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            if (_image != null)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.file(
-                  _image!,
-                  width: double.infinity,
-                  height: 150,
-                  fit: BoxFit.cover,
-                ),
-              ),
+
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _selectedImages.map((file) {
+                return ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.file(
+                    file,
+                    width: 100,
+                    height: 100,
+                    fit: BoxFit.cover,
+                  ),
+                );
+              }).toList(),
+            ),
           ],
         ),
       ),
