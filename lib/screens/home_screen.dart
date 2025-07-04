@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import 'write_page.dart';
+import 'package:deardiary2/services/supabase_services.dart';
+import 'package:deardiary2/screens/login_screen.dart'; // Import LoginScreen for logout navigation
+import 'add_entry_screen.dart'; // Import AddEntryScreen
+import 'package:deardiary2/models/diary_entry.dart'; // Import DiaryEntry
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -31,17 +34,44 @@ class _HomeScreenState extends State<HomeScreen>
 
   String? selectedTag;
   String? selectedMood;
+  List<DiaryEntry> _diaryEntries = [];
+  final SupabaseService _supabaseService = SupabaseService();
 
-  void _navigateToWritePage(String mood) {
+  @override
+  void initState() {
+    super.initState();
+    _fetchEntries();
+  }
+
+  Future<void> _fetchEntries() async {
+    try {
+      final entries = await _supabaseService.getEntries();
+      setState(() {
+        _diaryEntries = entries;
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to load entries: ${e.toString()}'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
+  }
+
+  void _navigateToaddEntryScreen(String mood) {
     Navigator.push(
       context,
       PageRouteBuilder(
         transitionDuration: const Duration(milliseconds: 400),
-        pageBuilder: (_, __, ___) => WritePage(mood: mood),
+        pageBuilder: (_, __, ___) => AddEntryScreen(mood: mood), // Navigate to AddEntryScreen
         transitionsBuilder: (_, animation, __, child) =>
             FadeTransition(opacity: animation, child: child),
       ),
-    );
+    ).then((_) {
+      // Refresh entries when returning from AddEntryScreen
+      _fetchEntries();
+    });
   }
 
   @override
@@ -52,6 +82,20 @@ class _HomeScreenState extends State<HomeScreen>
         title: const Text('DearDiary'),
         backgroundColor: const Color(0xFF2C2C3A),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              await _supabaseService.signOut();
+              // Navigate back to login screen or splash screen
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginScreen()), // Assuming LoginScreen is your initial auth screen
+                    (Route<dynamic> route) => false,
+              );
+            },
+          ),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -88,7 +132,7 @@ class _HomeScreenState extends State<HomeScreen>
                           selectedMood = mood['label'];
                         });
                         Future.delayed(const Duration(milliseconds: 150), () {
-                          _navigateToWritePage(selectedMood!);
+                          _navigateToaddEntryScreen(selectedMood!); // Call the updated navigation
                         });
                       },
                       child: AnimatedContainer(
@@ -185,22 +229,88 @@ class _HomeScreenState extends State<HomeScreen>
 
               const SizedBox(height: 24),
 
-              // 📝 Placeholder for filtered entries
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.grey[850],
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Text(
-                  selectedTag != null
-                      ? 'Showing entries for $selectedTag'
-                      : 'Select a tag to filter your entries',
-                  style: const TextStyle(color: Colors.white70),
-                  textAlign: TextAlign.center,
-                ),
-              ),
+              // Display filtered entries
+              _diaryEntries.isEmpty
+                  ? Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[850],
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Text(
+                        selectedTag != null
+                            ? 'No entries found for $selectedTag'
+                            : 'No entries yet. Start writing!',
+                        style: const TextStyle(color: Colors.white70),
+                        textAlign: TextAlign.center,
+                      ),
+                    )
+                  : ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: _diaryEntries.length,
+                      itemBuilder: (context, index) {
+                        final entry = _diaryEntries[index];
+                        // Filter by selectedTag if it's not null
+                        if (selectedTag != null && !entry.content.toLowerCase().contains(selectedTag!.substring(1).toLowerCase()) && !entry.title.toLowerCase().contains(selectedTag!.substring(1).toLowerCase())) {
+                          return const SizedBox.shrink(); // Hide if not matching tag
+                        }
+                        return Card(
+                          margin: const EdgeInsets.symmetric(vertical: 8.0),
+                          color: Colors.grey[850],
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  entry.title,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  entry.content,
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 14,
+                                  ),
+                                  maxLines: 3,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      'Mood: ${entry.mood}',
+                                      style: const TextStyle(
+                                        color: Colors.white54,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                    Text(
+                                      '${entry.createdAt.day}/${entry.createdAt.month}/${entry.createdAt.year}',
+                                      style: const TextStyle(
+                                        color: Colors.white54,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
             ],
           ),
         ),

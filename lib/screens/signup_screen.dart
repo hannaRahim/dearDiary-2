@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:deardiary2/services/supabase_services.dart'; // Import your SupabaseService
 import 'login_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
@@ -12,8 +13,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  final SupabaseService _supabaseService = SupabaseService(); // Initialize SupabaseService
 
-  void _signUp() {
+  void _signUp() async {
     String email = _emailController.text.trim();
     String password = _passwordController.text.trim();
 
@@ -24,14 +26,35 @@ class _SignUpScreenState extends State<SignUpScreen> {
       return;
     }
 
-    // Mock registration logic
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Account created! You can now log in.')),
-    );
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-    );
+    try {
+      final response = await _supabaseService.signUp(email, password);
+      if (response.user != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Account created! You can now log in.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Sign up failed. Please try again.'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('An error occurred: ${e.toString()}'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
   }
 
   @override

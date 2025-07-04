@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:deardiary2/main_navigation.dart'; 
+import 'package:deardiary2/main_navigation.dart';
+import 'package:deardiary2/services/supabase_services.dart'; // Import your SupabaseService
 import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -13,21 +14,44 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  final SupabaseService _supabaseService = SupabaseService(); // Initialize SupabaseService
 
-  void _login() {
+  void _login() async {
     String email = _emailController.text.trim();
     String password = _passwordController.text.trim();
 
-    // 🧪 MOCK: Replace with your own dummy login credentials
-    if (email == "nrshanarahim@gmail.com" && password == "meowmeow") {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const MainNavigation()),
-      );
-    } else {
+    await _supabaseService.signIn(email, password);
+
+    if (email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Invalid email or password'),
+          content: Text('Please enter both email and password.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
+    try {
+      final response = await _supabaseService.signIn(email, password);
+      if (response.user != null) {
+        // Login successful, navigate to main navigation
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const MainNavigation()),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Login failed. Please check your credentials.'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('An error occurred: ${e.toString()}'),
           backgroundColor: Colors.redAccent,
         ),
       );
