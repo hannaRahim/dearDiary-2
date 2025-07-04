@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:deardiary2/services/supabase_services.dart';
-import 'package:deardiary2/screens/login_screen.dart'; // Import LoginScreen for logout navigation
-import 'add_entry_screen.dart'; // Import AddEntryScreen
-import 'package:deardiary2/models/diary_entry.dart'; // Import DiaryEntry
+import 'package:deardiary2/screens/login_screen.dart';
+import 'add_entry_screen.dart';
+import 'package:deardiary2/models/diary_entry.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -11,8 +11,8 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen>
-    with SingleTickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen> {
+  final String username = "Suhana"; // Dynamic if you want
   final List<String> hashtags = [
     '#grateful',
     '#school',
@@ -23,13 +23,14 @@ class _HomeScreenState extends State<HomeScreen>
   ];
 
   final List<Map<String, String>> moods = [
-    {'emoji': '😄', 'label': 'Happy'},
-    {'emoji': '😐', 'label': 'Neutral'},
-    {'emoji': '😢', 'label': 'Sad'},
-    {'emoji': '😡', 'label': 'Angry'},
-    {'emoji': '😨', 'label': 'Anxious'},
-    {'emoji': '😴', 'label': 'Tired'},
-    {'emoji': '🤩', 'label': 'Excited'},
+    {'image': 'imgHappy.png', 'label': 'Happy'},
+    {'image': 'imgNeutral.png', 'label': 'Neutral'},
+    {'image': 'imgSad.png', 'label': 'Sad'},
+    {'image': 'imgAngry.png', 'label': 'Angry'},
+    {'image': 'imgAnxious.png', 'label': 'Anxious'},
+    {'image': 'imgTired.png', 'label': 'Tired'},
+    {'image': 'imgExcited.png', 'label': 'Excited'},
+    {'image': 'imgCustom.png', 'label': 'Custom'}, // Custom mood
   ];
 
   String? selectedTag;
@@ -64,12 +65,11 @@ class _HomeScreenState extends State<HomeScreen>
       context,
       PageRouteBuilder(
         transitionDuration: const Duration(milliseconds: 400),
-        pageBuilder: (_, __, ___) => AddEntryScreen(mood: mood), // Navigate to AddEntryScreen
+        pageBuilder: (_, __, ___) => AddEntryScreen(mood: mood),
         transitionsBuilder: (_, animation, __, child) =>
             FadeTransition(opacity: animation, child: child),
       ),
     ).then((_) {
-      // Refresh entries when returning from AddEntryScreen
       _fetchEntries();
     });
   }
@@ -87,11 +87,10 @@ class _HomeScreenState extends State<HomeScreen>
             icon: const Icon(Icons.logout),
             onPressed: () async {
               await _supabaseService.signOut();
-              // Navigate back to login screen or splash screen
               Navigator.pushAndRemoveUntil(
                 context,
-                MaterialPageRoute(builder: (context) => const LoginScreen()), // Assuming LoginScreen is your initial auth screen
-                    (Route<dynamic> route) => false,
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
+                (Route<dynamic> route) => false,
               );
             },
           ),
@@ -103,11 +102,11 @@ class _HomeScreenState extends State<HomeScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // 👋 Greeting
-              const Text(
-                'Hello 👋\nHow are you feeling today?',
+              // Greeting
+              Text(
+                'Hello, $username 👋\nHow are you feeling today?',
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 20,
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
@@ -115,7 +114,7 @@ class _HomeScreenState extends State<HomeScreen>
               ),
               const SizedBox(height: 24),
 
-              // 🎭 Mood Selector
+              // Mood Selector
               SizedBox(
                 height: 120,
                 child: ListView.separated(
@@ -125,19 +124,24 @@ class _HomeScreenState extends State<HomeScreen>
                   itemBuilder: (context, index) {
                     final mood = moods[index];
                     final isSelected = selectedMood == mood['label'];
+                    final isCustom = mood['label'] == 'Custom';
 
                     return GestureDetector(
                       onTap: () {
-                        setState(() {
-                          selectedMood = mood['label'];
-                        });
-                        Future.delayed(const Duration(milliseconds: 150), () {
-                          _navigateToaddEntryScreen(selectedMood!); // Call the updated navigation
-                        });
+                        final label = mood['label']!;
+                        if (isCustom) {
+                          _navigateToaddEntryScreen('');
+                        } else {
+                          setState(() {
+                            selectedMood = label;
+                          });
+                          Future.delayed(const Duration(milliseconds: 150), () {
+                            _navigateToaddEntryScreen(selectedMood!);
+                          });
+                        }
                       },
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
-                        curve: Curves.easeOut,
                         width: isSelected ? 100 : 90,
                         height: isSelected ? 100 : 90,
                         padding: const EdgeInsets.all(12),
@@ -164,15 +168,20 @@ class _HomeScreenState extends State<HomeScreen>
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(
-                              mood['emoji']!,
-                              style: const TextStyle(fontSize: 32),
-                            ),
+                            isCustom
+                                ? const Icon(Icons.add, color: Colors.white, size: 32)
+                                : Image.asset(
+                                    'assets/images/${mood['image']}',
+                                    width: 40,
+                                    height: 40,
+                                  ),
                             const SizedBox(height: 8),
                             Text(
                               mood['label']!,
                               style: const TextStyle(
-                                  color: Colors.white70, fontSize: 14),
+                                color: Colors.white70,
+                                fontSize: 14,
+                              ),
                             ),
                           ],
                         ),
@@ -184,7 +193,7 @@ class _HomeScreenState extends State<HomeScreen>
 
               const SizedBox(height: 32),
 
-              // 🏷 Hashtag Filter
+              // Hashtag Filter
               Align(
                 alignment: Alignment.centerLeft,
                 child: const Text(
@@ -211,9 +220,7 @@ class _HomeScreenState extends State<HomeScreen>
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         decoration: BoxDecoration(
-                          color: isSelected
-                              ? Colors.pinkAccent
-                              : Colors.grey[700],
+                          color: isSelected ? Colors.pinkAccent : Colors.grey[700],
                           borderRadius: BorderRadius.circular(20),
                         ),
                         alignment: Alignment.center,
@@ -229,7 +236,21 @@ class _HomeScreenState extends State<HomeScreen>
 
               const SizedBox(height: 24),
 
-              // Display filtered entries
+              // Recent Entries Label
+              Align(
+                alignment: Alignment.centerLeft,
+                child: const Text(
+                  'Recent Entries',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              // Entries Display
               _diaryEntries.isEmpty
                   ? Container(
                       width: double.infinity,
@@ -252,60 +273,98 @@ class _HomeScreenState extends State<HomeScreen>
                       itemCount: _diaryEntries.length,
                       itemBuilder: (context, index) {
                         final entry = _diaryEntries[index];
-                        // Filter by selectedTag if it's not null
-                        if (selectedTag != null && !entry.content.toLowerCase().contains(selectedTag!.substring(1).toLowerCase()) && !entry.title.toLowerCase().contains(selectedTag!.substring(1).toLowerCase())) {
-                          return const SizedBox.shrink(); // Hide if not matching tag
+                        if (selectedTag != null &&
+                            !entry.content.toLowerCase().contains(selectedTag!.substring(1).toLowerCase()) &&
+                            !entry.title.toLowerCase().contains(selectedTag!.substring(1).toLowerCase())) {
+                          return const SizedBox.shrink();
                         }
-                        return Card(
-                          margin: const EdgeInsets.symmetric(vertical: 8.0),
-                          color: Colors.grey[850],
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+
+                        return Dismissible(
+                          key: Key(entry.id.toString()),
+                          direction: DismissDirection.endToStart,
+                          confirmDismiss: (direction) async {
+                            return await showDialog(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text('Delete Entry'),
+                                content: const Text('Are you sure you want to delete this entry?'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.of(context).pop(false),
+                                    child: const Text('Cancel'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => Navigator.of(context).pop(true),
+                                    child: const Text('Delete'),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                          onDismissed: (direction) async {
+                            await _supabaseService.deleteEntry(int.parse(entry.id!));
+                            _fetchEntries();
+                          },
+                          background: Container(
+                            alignment: Alignment.centerRight,
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            decoration: BoxDecoration(
+                              color: Colors.redAccent,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(Icons.delete, color: Colors.white),
                           ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  entry.title,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  entry.content,
-                                  style: const TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 14,
-                                  ),
-                                  maxLines: 3,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const SizedBox(height: 8),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      'Mood: ${entry.mood}',
-                                      style: const TextStyle(
-                                        color: Colors.white54,
-                                        fontSize: 12,
-                                      ),
+                          child: Card(
+                            margin: const EdgeInsets.symmetric(vertical: 8.0),
+                            color: Colors.grey[850],
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    entry.title,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
                                     ),
-                                    Text(
-                                      '${entry.createdAt.day}/${entry.createdAt.month}/${entry.createdAt.year}',
-                                      style: const TextStyle(
-                                        color: Colors.white54,
-                                        fontSize: 12,
-                                      ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    entry.content,
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 14,
                                     ),
-                                  ],
-                                ),
-                              ],
+                                    maxLines: 3,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Mood: ${entry.mood}',
+                                        style: const TextStyle(
+                                          color: Colors.white54,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                      Text(
+                                        '${entry.createdAt.day}/${entry.createdAt.month}/${entry.createdAt.year}',
+                                        style: const TextStyle(
+                                          color: Colors.white54,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         );

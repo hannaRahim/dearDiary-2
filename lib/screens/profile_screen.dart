@@ -169,7 +169,6 @@ class _RecordCard extends StatelessWidget {
   final VoidCallback onTap;
 
   const _RecordCard({
-    super.key,
     required this.label,
     required this.count,
     required this.icon,

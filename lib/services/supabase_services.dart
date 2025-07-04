@@ -17,6 +17,17 @@ class SupabaseService {
     }
   }
 
+  Future<void> deleteEntry(int id) async {
+  final response = await _supabase
+      .from('diary_entries')
+      .delete()
+      .eq('id', id);
+
+  if (response.error != null) {
+    throw Exception('Failed to delete entry: ${response.error!.message}');
+  }
+  }
+
   // Fetch diary entries for the current user
   Future<List<DiaryEntry>> getEntries() async {
     try {
